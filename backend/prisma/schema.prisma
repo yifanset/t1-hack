@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  teamId      Int          @id @default(autoincrement())
+  name         String       @unique
+  createdAt    DateTime     @default(now())
+  target_metric Json?
+
+  // Связь один-ко-многим: одна команда → много разработчиков
+  developers   Developer[]
+  repositories   Repository[]
+  metrics   Metric[]
+  recommendations   Recommendation[]
+
+  @@map("teams")
+}
+
+model Developer {
+  developerId  Int      @id @default(autoincrement())
+  username     String   @unique
+  email        String   @unique
+  role         String
+
+  team         Team     @relation(fields: [teamId], references: [teamId])
+  teamId       Int
+
+  commits Commit[]
+  pullRequests PullRequest[]
+  codeReviews CodeReview[]
+
+  @@map("developers")
+}
+
+model Repository {
+  repositoryId Int      @id @default(autoincrement())
+  name         String   @unique
+  url          String   @unique
+
+  team         Team     @relation(fields: [teamId], references: [teamId])
+  teamId       Int
+
+  commits Commit[]
+  pullRequests PullRequest[]
+
+  @@map("repositories")
+}
+
+model Metric {
+  metricId     Int      @id @default(autoincrement())
+  name         String
+  value        Decimal
+  datetime     DateTime @default(now())
+
+  team         Team     @relation(fields: [teamId], references: [teamId])
+  teamId       Int
+
+  @@map("metrics")
+}
+
+model Recommendation {
+  recommendationId     Int      @id @default(autoincrement())
+  title                String
+  description          String
+  priority             String   @default("LOW")
+  datetime             DateTime @default(now())
+
+  team         Team     @relation(fields: [teamId], references: [teamId])
+  teamId       Int
+
+  @@map("recommendations")
+}
+
+model Commit {
+  commitId     Int      @id @default(autoincrement())
+  hash         String   @unique
+  message      String
+  timestamp    DateTime @default(now())
+
+  author       Developer @relation(fields: [developerId], references: [developerId])
+  developerId  Int
+
+  repository   Repository @relation(fields: [repositoryId], references: [repositoryId])
+  repositoryId Int
+
+  @@map("commits")
+}
+
+model PullRequest {
+  prId      Int      @id @default(autoincrement())
+  title     String
+  status    String
+  createdAt DateTime
+  mergedAt  DateTime?
+
+  author       Developer @relation(fields: [authorId], references: [developerId])
+  authorId     Int
+
+  repository   Repository @relation(fields: [repositoryId], references: [repositoryId])
+  repositoryId Int
+
+  codeReviews  CodeReview[]
+
+  @@map("pull_requests")
+}
+
+model CodeReview {
+  reviewId       Int      @id @default(autoincrement())
+  status         String
+  commentsCount  Int      @default(0)
+
+  author      Developer @relation(fields: [authorId], references: [developerId])
+  authorId    Int
+
+  pullRequest PullRequest @relation(fields: [prId], references: [prId])
+  prId        Int
+
+  @@map("code_reviews")
+}
+
+
+
+
