@@ -1,1 +1,2 @@
-let num = 12;
+let num:number = 12;
+let yes:number = 2934;
